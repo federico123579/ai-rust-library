@@ -71,16 +71,16 @@ impl<S: State> Frontier for StackFrontier<S> {
     }
 }
 
-pub struct PriorityFrontier<S> where 
-    S: State + PartialEq + Eq + PartialOrd + Ord,
-{
-    heap: BinaryHeap<S>,
-}
+// pub struct PriorityFrontier<S> where 
+//     S: State + PartialEq + Eq + PartialOrd + Ord,
+// {
+//     heap: BinaryHeap<S>,
+// }
 
-impl<S: State + PartialEq + Eq + PartialOrd + Ord> Iterator for PriorityFrontier<S> {
-    type Item = S;
+// impl<S: State + PartialEq + Eq + PartialOrd + Ord> Iterator for PriorityFrontier<S> {
+//     type Item = S;
 
-    fn next(&mut self) -> Option<Self::Item> {
-        self.heap.pop()
-    }
-}
+//     fn next(&mut self) -> Option<Self::Item> {
+//         self.heap.pop()
+//     }
+// }

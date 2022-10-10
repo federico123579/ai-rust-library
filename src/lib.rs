@@ -155,39 +155,39 @@ impl SearchAlgorithm for BreadthFirstSearch {
     }
 }
 
-pub trait UniformCostSearch {
-    fn uniform_search<P>(space: P) -> Option<SearchResult<P::State>> where
-        P: Space,    
-        P::Action: CostAction,
-        P::State: State;
-}
+// pub trait UniformCostSearch {
+//     fn uniform_search<P>(space: P) -> Option<SearchResult<P::State>> where
+//         P: Space,    
+//         P::Action: CostAction,
+//         P::State: State;
+// }
 
-impl<S> UniformCostSearch for S where
-        S: Space,
-        S::Action: CostAction,
-        S::State: State,
-    {
-    fn uniform_search<P: Space>(space: P) -> Option<SearchResult<P::State>> {
-        let mut frontier = frontiers::QueueFrontier::new(space.initial_state());
-        let mut visited = HashSet::new();
-        let mut generated: usize = 0;
-        while let Some(node) = frontier.pop() {
-            let state = node.state();
-            if space.is_goal(&state) {
-                return Some(SearchResult::new(node, generated, visited.len()));
-            }
-            if visited.contains(state) {
-                continue;
-            }
-            visited.insert(state.clone());
-            for action in state.get_available_actions() {
-                frontier.push(node.apply(&action));
-                generated += 1;
-            }
-        }
-        None
-    }
-}
+// impl<S> UniformCostSearch for S where
+//         S: Space,
+//         S::Action: CostAction,
+//         S::State: State,
+//     {
+//     fn uniform_search<P: Space>(space: P) -> Option<SearchResult<P::State>> {
+//         let mut frontier = frontiers::QueueFrontier::new(space.initial_state());
+//         let mut visited = HashSet::new();
+//         let mut generated: usize = 0;
+//         while let Some(node) = frontier.pop() {
+//             let state = node.state();
+//             if space.is_goal(&state) {
+//                 return Some(SearchResult::new(node, generated, visited.len()));
+//             }
+//             if visited.contains(state) {
+//                 continue;
+//             }
+//             visited.insert(state.clone());
+//             for action in state.get_available_actions() {
+//                 frontier.push(node.apply(&action));
+//                 generated += 1;
+//             }
+//         }
+//         None
+//     }
+// }
 
 // #[cfg(test)]
 // mod tests {
