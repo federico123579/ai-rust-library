@@ -66,6 +66,34 @@ pub struct SearchResult<S> where
     pub generated: usize,
 }
 
+impl <S: SearchState> SearchResult<S> {
+    fn new(end_state: S, path: VecDeque<S::Action>, expanded: usize, generated: usize) -> Self {
+        Self {
+            end_state,
+            path,
+            expanded,
+            generated,
+        }
+    }
+
+    fn from_wrap(wrap: StateActionWrap<S>, generated: usize, expanded: usize) -> Self {
+        let (state, actions) = wrap.unwrap();
+        Self {
+            end_state: state,
+            path: actions.into(),
+            expanded,
+            generated,
+        }
+    }
+}
+
+impl<S: SearchState> From<StateActionWrap<S>> for SearchResult<S> {
+    fn from(wrap: StateActionWrap<S>) -> Self {
+        SearchResult::new(wrap.state, wrap.actions.into(), 0, 0)
+    }
+}
+
+
 // ================================================================================
 // Search algorithms:
 // - DFS
@@ -89,15 +117,10 @@ impl SearchAlgorithm for DepthFirstSearch {
         let mut frontier = frontiers::StackFrontier::new(space.initial_state());
         let mut visited = dup_protection::StateCacheSet::new();
         while let Some(wrap) = frontier.pop() {
-            let (state, actions) = wrap.unwrap();
+            let (state, actions) = wrap.clone().unwrap();
             // println!("state:\n{}", &state);
             if space.is_goal(&state) {
-                return Some(SearchResult {
-                    end_state: state,
-                    path: actions.into(),
-                    expanded: visited.len(),
-                    generated: generated as usize,
-                });
+                return Some(SearchResult::from_wrap(wrap, generated, visited.len()));
             }
             if visited.contains(&state) {
                 continue;
@@ -125,14 +148,10 @@ impl SearchAlgorithm for BreadthFirstSearch {
         let mut visited = HashSet::new();
         let mut generated: usize = 0;
         while let Some(wrap) = queue.pop() {
-            let (state, actions) = wrap.unwrap();
+            let (state, actions) = wrap.clone().unwrap();
             // println!("state:\n{}", state);
             if space.is_goal(&state) {
-                return Some(SearchResult {
-                    end_state: state,
-                    path: actions.into(),
-                    expanded: visited.len(),
-                    generated });
+                return Some(SearchResult::from_wrap(wrap, generated, visited.len()));
             }
             if visited.contains(&state) {
                 continue;
