@@ -19,14 +19,14 @@ pub trait SearchSpace {
 }
 
 #[derive(Clone)]
-pub struct StateWrap<S: SearchState> {
+pub struct StateActionWrap<S: SearchState> {
     state: S,
     actions: Vec<S::Action>,
 }
 
-impl<S: SearchState> StateWrap<S> {
-    fn new(state: S) -> StateWrap<S> {
-        StateWrap {
+impl<S: SearchState> StateActionWrap<S> {
+    fn new(state: S) -> StateActionWrap<S> {
+        StateActionWrap {
             state,
             actions: Vec::new(),
         }
@@ -37,13 +37,13 @@ impl<S: SearchState> StateWrap<S> {
     }
 }
 
-trait WrappedState: SearchState {
-    fn wrap_actions(self, actions: Vec<Self::Action>) -> StateWrap<Self>;
+trait ActionWrappedState: SearchState {
+    fn wrap_actions(self, actions: Vec<Self::Action>) -> StateActionWrap<Self>;
 }
 
-impl<S: SearchState> WrappedState for S {
-    fn wrap_actions(self, actions: Vec<Self::Action>) -> StateWrap<Self> {
-        StateWrap {
+impl<S: SearchState> ActionWrappedState for S {
+    fn wrap_actions(self, actions: Vec<Self::Action>) -> StateActionWrap<Self> {
+        StateActionWrap {
             state: self,
             actions: actions.into(),
         }
