@@ -1,8 +1,10 @@
-mod frontiers;
+mod algos;
 mod dup_protection;
+mod frontiers;
 
-use std::{collections::HashSet, hash::Hash};
-use frontiers::Frontier;
+use std::hash::Hash;
+
+pub use algos::{BreadthFirstSearch, DepthFirstSearch};
 
 // ================================================================================
 // Traits to be implemented by the user to define the search problem
@@ -48,10 +50,7 @@ impl<S: State> Node<S> {
         let state = self.state.apply(action);
         let mut path = self.path.clone();
         path.push(action.clone());
-        Self {
-            state,
-            path,
-        }
+        Self { state, path }
     }
 }
 
@@ -62,9 +61,9 @@ pub trait Space {
     fn is_goal(&self, state: &Self::State) -> bool;
 }
 
-
 #[derive(Debug)]
-pub struct SearchResult<S> where
+pub struct SearchResult<S>
+where
     S: State,
 {
     pub end_state: S,
@@ -73,7 +72,7 @@ pub struct SearchResult<S> where
     pub generated: usize,
 }
 
-impl <S: State> SearchResult<S> {
+impl<S: State> SearchResult<S> {
     fn new(node: Node<S>, generated: usize, expanded: usize) -> Self {
         let path = node.path().to_owned();
         Self {
@@ -90,111 +89,3 @@ impl<S: State> From<Node<S>> for SearchResult<S> {
         SearchResult::new(node, 0, 0)
     }
 }
-
-
-// ================================================================================
-// Search algorithms:
-// - DFS
-// - BFS
-// ================================================================================
-pub trait DepthFirstSearch<S: Space> {
-    fn dfs_search(&self) -> Option<SearchResult<S::State>>;
-}
-
-impl<S> DepthFirstSearch<S> for S where
-        S: Space,
-        S::Action: Action,
-        S::State: State,
-    {
-    fn dfs_search(&self) -> Option<SearchResult<S::State>> {
-        let mut generated: usize = 0;
-        let mut frontier = frontiers::StackFrontier::new(self.initial_state());
-        let mut visited = dup_protection::StateCacheSet::new();
-        while let Some(node) = frontier.pop() {
-            let state = node.state();
-            if self.is_goal(&state) {
-                return Some(SearchResult::new(node, generated, visited.len()));
-            }
-            if visited.contains(state) {
-                continue;
-            }
-            visited.insert(state.clone());
-            for action in state.get_available_actions() {
-                frontier.push(node.apply(&action));
-                generated += 1;
-            }
-        }
-        None
-    }
-}
-
-pub trait BreadthFirstSearch<S: Space> {
-    fn bfs_search(&self) -> Option<SearchResult<S::State>>;
-}
-
-impl<S> BreadthFirstSearch<S> for S where
-        S: Space,
-        S::Action: Action,
-        S::State: State,
-    {
-    fn bfs_search(&self) -> Option<SearchResult<S::State>> {
-        let mut queue = frontiers::QueueFrontier::new(self.initial_state());
-        let mut visited = HashSet::new();
-        let mut generated: usize = 0;
-        while let Some(node) = queue.pop() {
-            let state = node.state();
-            if self.is_goal(&state) {
-                return Some(SearchResult::new(node, generated, visited.len()));
-            }
-            if visited.contains(state) {
-                continue;
-            }
-            visited.insert(state.clone());
-            for action in state.get_available_actions() {
-                queue.push(node.apply(&action));
-                generated += 1;
-            }
-        }
-        None
-    }
-}
-
-// pub trait UniformCostSearch {
-//     fn uniform_search<P>(space: P) -> Option<SearchResult<P::State>> where
-//         P: Space,    
-//         P::Action: CostAction,
-//         P::State: State;
-// }
-
-// impl<S> UniformCostSearch for S where
-//         S: Space,
-//         S::Action: CostAction,
-//         S::State: State,
-//     {
-//     fn uniform_search<P: Space>(space: P) -> Option<SearchResult<P::State>> {
-//         let mut frontier = frontiers::QueueFrontier::new(space.initial_state());
-//         let mut visited = HashSet::new();
-//         let mut generated: usize = 0;
-//         while let Some(node) = frontier.pop() {
-//             let state = node.state();
-//             if space.is_goal(&state) {
-//                 return Some(SearchResult::new(node, generated, visited.len()));
-//             }
-//             if visited.contains(state) {
-//                 continue;
-//             }
-//             visited.insert(state.clone());
-//             for action in state.get_available_actions() {
-//                 frontier.push(node.apply(&action));
-//                 generated += 1;
-//             }
-//         }
-//         None
-//     }
-// }
-
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-
-// }
