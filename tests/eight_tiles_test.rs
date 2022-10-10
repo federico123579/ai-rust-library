@@ -1,5 +1,6 @@
-use search::{self, SearchAlgorithm};
+use search::{self, SearchAlgorithm, SearchSpace};
 
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub enum EightTilesAction {
     Up,
     Down,
@@ -124,6 +125,7 @@ impl std::fmt::Display for EightTiles {
     }
 }
 
+#[derive(Clone)]
 pub struct EightTilesSpace {
     initial_state: EightTiles,
 }
@@ -136,7 +138,6 @@ impl EightTilesSpace {
 
 impl search::SearchSpace for EightTilesSpace {
     type State = EightTiles;
-    type Action = EightTilesAction;
 
     fn initial_state(&self) -> Self::State {
         self.initial_state.clone()
@@ -147,14 +148,54 @@ impl search::SearchSpace for EightTilesSpace {
     }
 }
 
+mod test_utils {
+    use super::*;
+
+    use crate::EightTilesSpace;
+
+    pub fn get_state_space(tiles: [[u8; 3]; 3]) -> EightTilesSpace {
+        EightTilesSpace::new(EightTiles::new(tiles))
+    }
+
+    pub fn get_easy_problem_space() -> EightTilesSpace {
+        get_state_space([[1, 2, 3], [4, 5, 6], [7, 0, 8]])
+    }
+
+    // pub fn get_hard_problem_space() -> EightTilesSpace {
+    //     get_state_space([[2, 7, 3], [1, 6, 4], [8, 0, 5]])
+    // }
+}
+
 #[test]
 fn search_with_dbf() {
-    let space = EightTilesSpace::new(EightTiles::new([[1, 2, 3], [4, 5, 6], [7, 0, 8]]));
-    let result = search::DepthFirstSearch::search(space);
+    let space = test_utils::get_easy_problem_space();
+    let result = search::DepthFirstSearch::search(space.clone());
     assert!(result.is_some());
     let result = result.unwrap();
-    // assert_eq!(result.cost, 1);
-    // assert_eq!(result.path.len(), 2);
-    // assert_eq!(result.path[0], EightTiles::new([[1, 2, 3], [4, 5, 6], [7, 0, 8]]));
-    // assert_eq!(result.path[1], EightTiles::new([[1, 2, 3], [4, 5, 6], [7, 8, 0]]));
+    assert!(space.is_goal(&result.end_state));
+    assert!(result.path.len() > 1);
+    assert!(result.path.contains(&EightTilesAction::Right));
+    assert!(result.generated > result.expanded);
+    println!("Depth first search results:");
+    println!("  Generated: {}", result.generated);
+    println!("  Expanded: {}", result.expanded);
+    println!("  Path length: {}", result.path.len());
+    println!("  Path: {:?}", result.path);
+}
+
+#[test]
+fn search_with_bfs() {
+    let space = test_utils::get_easy_problem_space();
+    let result = search::BreadthFirstSearch::search(space.clone());
+    assert!(result.is_some());
+    let result = result.unwrap();
+    assert!(space.is_goal(&result.end_state));
+    assert_eq!(result.path.len(), 1);
+    assert_eq!(result.path[0], EightTilesAction::Right);
+    assert!(result.generated > result.expanded);
+    println!("Breadth first search results:");
+    println!("  Generated: {}", result.generated);
+    println!("  Expanded: {}", result.expanded);
+    println!("  Path length: {}", result.path.len());
+    println!("  Path: {:?}", result.path);
 }
