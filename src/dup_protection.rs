@@ -1,11 +1,11 @@
+use crate::State;
 use std::collections::HashSet;
-use crate::{SearchState};
 
-pub struct StateCacheSet<S: SearchState> {
+pub struct StateCacheSet<S: State> {
     seen: HashSet<S>,
 }
 
-impl <S: SearchState> StateCacheSet<S> {
+impl<S: State> StateCacheSet<S> {
     pub fn new() -> Self {
         Self {
             seen: HashSet::new(),

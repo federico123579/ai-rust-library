@@ -1,95 +1,93 @@
 mod frontiers;
 mod dup_protection;
 
-use std::{collections::{HashSet, VecDeque}, hash::Hash};
+use std::{collections::HashSet, hash::Hash};
 use frontiers::Frontier;
 
 // ================================================================================
 // Traits to be implemented by the user to define the search problem
 // ================================================================================
-pub trait StateAction: Clone {}
+/// Base trait for action
+pub trait Action: Clone {}
 
-pub trait SearchState: Clone + Eq + Hash {
-    type Action: StateAction;
-    fn actions(&self) -> Vec<Self::Action>;
+/// Action with a cost associated with it
+pub trait CostAction: Action {
+    fn cost(&self) -> usize;
+}
+
+pub trait State: Clone + Eq + Hash {
+    type Action: Action;
+    fn get_available_actions(&self) -> Vec<Self::Action>;
+    /// this build a new state from previous
     fn apply(&self, action: &Self::Action) -> Self;
 }
 
-pub trait SearchSpace {
-    type State: SearchState;
+#[derive(Debug, Clone)]
+pub struct Node<S: State> {
+    state: S,
+    path: Vec<S::Action>,
+}
+
+impl<S: State> Node<S> {
+    pub fn new(state: S) -> Self {
+        Self {
+            state,
+            path: Vec::new(),
+        }
+    }
+
+    pub fn state(&self) -> &S {
+        &self.state
+    }
+
+    pub fn path(&self) -> &Vec<S::Action> {
+        &self.path
+    }
+
+    pub fn apply(&self, action: &S::Action) -> Self {
+        let state = self.state.apply(action);
+        let mut path = self.path.clone();
+        path.push(action.clone());
+        Self {
+            state,
+            path,
+        }
+    }
+}
+
+pub trait Space {
+    type State: State;
+    type Action: Action;
     fn initial_state(&self) -> Self::State;
     fn is_goal(&self, state: &Self::State) -> bool;
 }
 
-// ================================================================================
-// State wrapper
-// ================================================================================
-#[derive(Clone)]
-pub struct StateActionWrap<S: SearchState> {
-    state: S,
-    actions: Vec<S::Action>,
-}
-
-impl<S: SearchState> StateActionWrap<S> {
-    fn new(state: S) -> StateActionWrap<S> {
-        StateActionWrap {
-            state,
-            actions: Vec::new(),
-        }
-    }
-
-    fn unwrap(self) -> (S, Vec<S::Action>) {
-        (self.state, self.actions.into())
-    }
-}
-
-trait ActionWrappedState: SearchState {
-    fn wrap_actions(self, actions: Vec<Self::Action>) -> StateActionWrap<Self>;
-}
-
-impl<S: SearchState> ActionWrappedState for S {
-    fn wrap_actions(self, actions: Vec<Self::Action>) -> StateActionWrap<Self> {
-        StateActionWrap {
-            state: self,
-            actions: actions.into(),
-        }
-    }
-} 
 
 #[derive(Debug)]
 pub struct SearchResult<S> where
-    S: SearchState,
+    S: State,
 {
     pub end_state: S,
-    pub path: VecDeque<S::Action>,
+    pub path: Vec<S::Action>,
     pub expanded: usize,
     pub generated: usize,
 }
 
-impl <S: SearchState> SearchResult<S> {
-    fn new(end_state: S, path: VecDeque<S::Action>, expanded: usize, generated: usize) -> Self {
+impl <S: State> SearchResult<S> {
+    fn new(node: Node<S>, generated: usize, expanded: usize) -> Self {
+        let path = node.path().to_owned();
         Self {
-            end_state,
+            end_state: node.state().to_owned(),
             path,
             expanded,
             generated,
         }
     }
-
-    fn from_wrap(wrap: StateActionWrap<S>, generated: usize, expanded: usize) -> Self {
-        let (state, actions) = wrap.unwrap();
-        Self {
-            end_state: state,
-            path: actions.into(),
-            expanded,
-            generated,
-        }
-    }
 }
 
-impl<S: SearchState> From<StateActionWrap<S>> for SearchResult<S> {
-    fn from(wrap: StateActionWrap<S>) -> Self {
-        SearchResult::new(wrap.state, wrap.actions.into(), 0, 0)
+impl<S: State> From<Node<S>> for SearchResult<S> {
+    fn from(node: Node<S>) -> Self {
+        SearchResult::new(node, 0, 0)
     }
 }
 
@@ -101,35 +99,30 @@ impl<S: SearchState> From<StateActionWrap<S>> for SearchResult<S> {
 // ================================================================================
 pub trait SearchAlgorithm {
     // fn search(&self, space: impl SearchSpace) -> Option<dyn SearchState<Action=dyn StateAction>>;
-    fn search<S,P>(space: P) -> Option<SearchResult<S>> where
-        S: SearchState + std::fmt::Display,
-        P: SearchSpace<State=S>;
+    fn search<P: Space>(space: P) -> Option<SearchResult<P::State>>;
+        // S: State + std::fmt::Display,
+        // P: Space<State=S>;
 }
 
 pub struct DepthFirstSearch {}
 
 impl SearchAlgorithm for DepthFirstSearch {
-    fn search<S,P>(space: P) -> Option<SearchResult<S>> where
-        S: SearchState + std::fmt::Display,
-        P: SearchSpace<State=S>,
+    fn search<P: Space>(space: P) -> Option<SearchResult<P::State>>
     {
         let mut generated: usize = 0;
         let mut frontier = frontiers::StackFrontier::new(space.initial_state());
         let mut visited = dup_protection::StateCacheSet::new();
-        while let Some(wrap) = frontier.pop() {
-            let (state, actions) = wrap.clone().unwrap();
-            // println!("state:\n{}", &state);
+        while let Some(node) = frontier.pop() {
+            let state = node.state();
             if space.is_goal(&state) {
-                return Some(SearchResult::from_wrap(wrap, generated, visited.len()));
+                return Some(SearchResult::new(node, generated, visited.len()));
             }
-            if visited.contains(&state) {
+            if visited.contains(state) {
                 continue;
             }
             visited.insert(state.clone());
-            for action in state.actions() {
-                let mut past_actions = actions.clone();
-                past_actions.push(action.clone());
-                frontier.push(state.apply(&action).wrap_actions(past_actions));
+            for action in state.get_available_actions() {
+                frontier.push(node.apply(&action));
                 generated += 1;
             }
         }
@@ -140,27 +133,55 @@ impl SearchAlgorithm for DepthFirstSearch {
 pub struct BreadthFirstSearch {}
 
 impl SearchAlgorithm for BreadthFirstSearch {
-    fn search<S,P>(space: P) -> Option<SearchResult<S>> where
-        S: SearchState + std::fmt::Display,
-        P: SearchSpace<State=S>,
-    {
+    fn search<P: Space>(space: P) -> Option<SearchResult<P::State>> {
         let mut queue = frontiers::QueueFrontier::new(space.initial_state());
         let mut visited = HashSet::new();
         let mut generated: usize = 0;
-        while let Some(wrap) = queue.pop() {
-            let (state, actions) = wrap.clone().unwrap();
-            // println!("state:\n{}", state);
+        while let Some(node) = queue.pop() {
+            let state = node.state();
             if space.is_goal(&state) {
-                return Some(SearchResult::from_wrap(wrap, generated, visited.len()));
+                return Some(SearchResult::new(node, generated, visited.len()));
             }
-            if visited.contains(&state) {
+            if visited.contains(state) {
                 continue;
             }
             visited.insert(state.clone());
-            for action in state.actions() {
-                let mut past_actions = actions.clone();
-                past_actions.push(action.clone());
-                queue.push(state.apply(&action).wrap_actions(past_actions));
+            for action in state.get_available_actions() {
+                queue.push(node.apply(&action));
+                generated += 1;
+            }
+        }
+        None
+    }
+}
+
+pub trait UniformCostSearch {
+    fn uniform_search<P>(space: P) -> Option<SearchResult<P::State>> where
+        P: Space,    
+        P::Action: CostAction,
+        P::State: State;
+}
+
+impl<S> UniformCostSearch for S where
+        S: Space,
+        S::Action: CostAction,
+        S::State: State,
+    {
+    fn uniform_search<P: Space>(space: P) -> Option<SearchResult<P::State>> {
+        let mut frontier = frontiers::QueueFrontier::new(space.initial_state());
+        let mut visited = HashSet::new();
+        let mut generated: usize = 0;
+        while let Some(node) = frontier.pop() {
+            let state = node.state();
+            if space.is_goal(&state) {
+                return Some(SearchResult::new(node, generated, visited.len()));
+            }
+            if visited.contains(state) {
+                continue;
+            }
+            visited.insert(state.clone());
+            for action in state.get_available_actions() {
+                frontier.push(node.apply(&action));
                 generated += 1;
             }
         }

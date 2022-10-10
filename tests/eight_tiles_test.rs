@@ -1,4 +1,4 @@
-use search::{self, SearchAlgorithm, SearchSpace};
+use search::{self, SearchAlgorithm, State, Space, Action};
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub enum EightTilesAction {
@@ -8,7 +8,7 @@ pub enum EightTilesAction {
     Right,
 }
 
-impl search::StateAction for EightTilesAction {}
+impl Action for EightTilesAction {}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum TileType {
@@ -73,10 +73,10 @@ impl EightTiles {
     }
 }
 
-impl search::SearchState for EightTiles {
+impl State for EightTiles {
     type Action = EightTilesAction;
 
-    fn actions(&self) -> Vec<Self::Action> {
+    fn get_available_actions(&self) -> Vec<Self::Action> {
         let mut actions = Vec::new();
         let (x, y) = self.find_empty();
         if x > 0 {
@@ -136,8 +136,9 @@ impl EightTilesSpace {
     }
 }
 
-impl search::SearchSpace for EightTilesSpace {
+impl search::Space for EightTilesSpace {
     type State = EightTiles;
+    type Action = EightTilesAction;
 
     fn initial_state(&self) -> Self::State {
         self.initial_state.clone()
@@ -167,7 +168,7 @@ mod test_utils {
 }
 
 #[test]
-fn search_with_dbf() {
+fn search_with_dfs() {
     let space = test_utils::get_easy_problem_space();
     let result = search::DepthFirstSearch::search(space.clone());
     assert!(result.is_some());
