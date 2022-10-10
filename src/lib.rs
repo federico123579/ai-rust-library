@@ -2,8 +2,11 @@ mod frontiers;
 mod dup_protection;
 
 use std::{collections::{HashSet, VecDeque}, hash::Hash};
-use frontiers::{Frontier};
+use frontiers::Frontier;
 
+// ================================================================================
+// Traits to be implemented by the user to define the search problem
+// ================================================================================
 pub trait StateAction: Clone {}
 
 pub trait SearchState: Clone + Eq + Hash {
@@ -18,6 +21,9 @@ pub trait SearchSpace {
     fn is_goal(&self, state: &Self::State) -> bool;
 }
 
+// ================================================================================
+// State wrapper
+// ================================================================================
 #[derive(Clone)]
 pub struct StateActionWrap<S: SearchState> {
     state: S,
@@ -60,6 +66,11 @@ pub struct SearchResult<S> where
     pub generated: usize,
 }
 
+// ================================================================================
+// Search algorithms:
+// - DFS
+// - BFS
+// ================================================================================
 pub trait SearchAlgorithm {
     // fn search(&self, space: impl SearchSpace) -> Option<dyn SearchState<Action=dyn StateAction>>;
     fn search<S,P>(space: P) -> Option<SearchResult<S>> where
