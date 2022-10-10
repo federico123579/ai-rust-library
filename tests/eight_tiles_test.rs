@@ -1,4 +1,4 @@
-use search::{self, SearchAlgorithm, State, Space, Action};
+use search::{self, State, Space, Action, DepthFirstSearch, BreadthFirstSearch};
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub enum EightTilesAction {
@@ -170,7 +170,7 @@ mod test_utils {
 #[test]
 fn search_with_dfs() {
     let space = test_utils::get_easy_problem_space();
-    let result = search::DepthFirstSearch::search(space.clone());
+    let result = space.dfs_search();
     assert!(result.is_some());
     let result = result.unwrap();
     assert!(space.is_goal(&result.end_state));
@@ -187,7 +187,7 @@ fn search_with_dfs() {
 #[test]
 fn search_with_bfs() {
     let space = test_utils::get_easy_problem_space();
-    let result = search::BreadthFirstSearch::search(space.clone());
+    let result = space.bfs_search();
     assert!(result.is_some());
     let result = result.unwrap();
     assert!(space.is_goal(&result.end_state));

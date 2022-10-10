@@ -97,24 +97,22 @@ impl<S: State> From<Node<S>> for SearchResult<S> {
 // - DFS
 // - BFS
 // ================================================================================
-pub trait SearchAlgorithm {
-    // fn search(&self, space: impl SearchSpace) -> Option<dyn SearchState<Action=dyn StateAction>>;
-    fn search<P: Space>(space: P) -> Option<SearchResult<P::State>>;
-        // S: State + std::fmt::Display,
-        // P: Space<State=S>;
+pub trait DepthFirstSearch<S: Space> {
+    fn dfs_search(&self) -> Option<SearchResult<S::State>>;
 }
 
-pub struct DepthFirstSearch {}
-
-impl SearchAlgorithm for DepthFirstSearch {
-    fn search<P: Space>(space: P) -> Option<SearchResult<P::State>>
+impl<S> DepthFirstSearch<S> for S where
+        S: Space,
+        S::Action: Action,
+        S::State: State,
     {
+    fn dfs_search(&self) -> Option<SearchResult<S::State>> {
         let mut generated: usize = 0;
-        let mut frontier = frontiers::StackFrontier::new(space.initial_state());
+        let mut frontier = frontiers::StackFrontier::new(self.initial_state());
         let mut visited = dup_protection::StateCacheSet::new();
         while let Some(node) = frontier.pop() {
             let state = node.state();
-            if space.is_goal(&state) {
+            if self.is_goal(&state) {
                 return Some(SearchResult::new(node, generated, visited.len()));
             }
             if visited.contains(state) {
@@ -130,16 +128,22 @@ impl SearchAlgorithm for DepthFirstSearch {
     }
 }
 
-pub struct BreadthFirstSearch {}
+pub trait BreadthFirstSearch<S: Space> {
+    fn bfs_search(&self) -> Option<SearchResult<S::State>>;
+}
 
-impl SearchAlgorithm for BreadthFirstSearch {
-    fn search<P: Space>(space: P) -> Option<SearchResult<P::State>> {
-        let mut queue = frontiers::QueueFrontier::new(space.initial_state());
+impl<S> BreadthFirstSearch<S> for S where
+        S: Space,
+        S::Action: Action,
+        S::State: State,
+    {
+    fn bfs_search(&self) -> Option<SearchResult<S::State>> {
+        let mut queue = frontiers::QueueFrontier::new(self.initial_state());
         let mut visited = HashSet::new();
         let mut generated: usize = 0;
         while let Some(node) = queue.pop() {
             let state = node.state();
-            if space.is_goal(&state) {
+            if self.is_goal(&state) {
                 return Some(SearchResult::new(node, generated, visited.len()));
             }
             if visited.contains(state) {
