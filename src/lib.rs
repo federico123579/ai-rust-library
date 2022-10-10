@@ -1,6 +1,7 @@
 mod algos;
 mod dup_protection;
 mod frontiers;
+mod output;
 
 use std::hash::Hash;
 
@@ -22,6 +23,13 @@ pub trait State: Clone + Eq + Hash {
     fn get_available_actions(&self) -> Vec<Self::Action>;
     /// this build a new state from previous
     fn apply(&self, action: &Self::Action) -> Self;
+}
+
+pub trait Space {
+    type State: State;
+    type Action: Action;
+    fn initial_state(&self) -> Self::State;
+    fn is_goal(&self, state: &Self::State) -> bool;
 }
 
 #[derive(Debug, Clone)]
@@ -51,41 +59,5 @@ impl<S: State> Node<S> {
         let mut path = self.path.clone();
         path.push(action.clone());
         Self { state, path }
-    }
-}
-
-pub trait Space {
-    type State: State;
-    type Action: Action;
-    fn initial_state(&self) -> Self::State;
-    fn is_goal(&self, state: &Self::State) -> bool;
-}
-
-#[derive(Debug)]
-pub struct SearchResult<S>
-where
-    S: State,
-{
-    pub end_state: S,
-    pub path: Vec<S::Action>,
-    pub expanded: usize,
-    pub generated: usize,
-}
-
-impl<S: State> SearchResult<S> {
-    fn new(node: Node<S>, generated: usize, expanded: usize) -> Self {
-        let path = node.path().to_owned();
-        Self {
-            end_state: node.state().to_owned(),
-            path,
-            expanded,
-            generated,
-        }
-    }
-}
-
-impl<S: State> From<Node<S>> for SearchResult<S> {
-    fn from(node: Node<S>) -> Self {
-        SearchResult::new(node, 0, 0)
     }
 }
