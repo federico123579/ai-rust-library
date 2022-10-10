@@ -11,3 +11,8 @@ edition = "2021"
 name = "eight_tiles"
 crate-type = ["staticlib"]
 test = true
+
+[[example]]
+name = "sudoku"
+# crate-type = ["staticlib"]
+# test = true
