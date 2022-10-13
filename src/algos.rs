@@ -6,9 +6,10 @@ use crate::{
     dup_protection::StateCacheSet,
     frontiers::{Frontier, QueueFrontier, StackFrontier},
     output::SearchResult,
-    Action, Space, State,
+    Action, Space, State, Node,
 };
 use std::collections::HashSet;
+use rayon::prelude::*;
 
 pub trait DepthFirstSearch<S: Space> {
     fn dfs_search(&self) -> Option<SearchResult<S::State>>;
@@ -17,8 +18,8 @@ pub trait DepthFirstSearch<S: Space> {
 impl<S> DepthFirstSearch<S> for S
 where
     S: Space,
-    S::Action: Action,
-    S::State: State,
+    S::Action: Action + Sync + Send,
+    S::State: State + Sync + Send,
 {
     fn dfs_search(&self) -> Option<SearchResult<S::State>> {
         let mut generated: usize = 0;
@@ -29,14 +30,16 @@ where
             if self.is_goal(&state) {
                 return Some(SearchResult::new(node, generated, visited.len()));
             }
-            if visited.contains(state) {
-                continue;
-            }
+
             visited.insert(state.clone());
-            for action in state.get_available_actions() {
-                frontier.push(node.apply(&action));
-                generated += 1;
-            }
+            let generated_nodes: Vec<Node<S::State>> = state.get_available_actions()
+                .into_par_iter()
+                .map(|action| node.apply(&action))
+                .filter(|node| !visited.contains(&node.state()))
+                .collect();
+            
+            generated += generated_nodes.len();
+            frontier.extend(generated_nodes);
         }
         None
     }
@@ -50,13 +53,15 @@ impl<S> BreadthFirstSearch<S> for S
 where
     S: Space,
     S::Action: Action,
-    S::State: State,
+    S::State: State + std::fmt::Display,
 {
     fn bfs_search(&self) -> Option<SearchResult<S::State>> {
         let mut queue = QueueFrontier::new(self.initial_state());
         let mut visited = HashSet::new();
         let mut generated: usize = 0;
         while let Some(node) = queue.pop() {
+            println!("Generated: {}\n Expanded: {}\n", generated, visited.len());
+            println!("Node:\n{}", node.state());
             let state = node.state();
             if self.is_goal(&state) {
                 return Some(SearchResult::new(node, generated, visited.len()));

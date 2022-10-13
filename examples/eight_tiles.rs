@@ -167,14 +167,14 @@ mod tests {
             get_state_space([[1, 2, 3], [4, 5, 6], [7, 0, 8]])
         }
 
-        // pub fn get_hard_problem_space() -> EightTilesSpace {
-        //     get_state_space([[2, 7, 3], [1, 6, 4], [8, 0, 5]])
-        // }
+        pub fn get_hard_problem_space() -> EightTilesSpace {
+            get_state_space([[2, 7, 3], [1, 6, 4], [8, 0, 5]])
+        }
     }
 
     #[test]
     fn search_with_dfs() {
-        let space = test_utils::get_easy_problem_space();
+        let space = test_utils::get_hard_problem_space();
         let result = space.dfs_search();
         assert!(result.is_some());
         let result = result.unwrap();

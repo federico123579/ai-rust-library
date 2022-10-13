@@ -6,6 +6,7 @@ pub trait Frontier: Iterator {
     fn new(initial_state: Self::State) -> Self;
     fn push(&mut self, state: Node<Self::State>);
     fn pop(&mut self) -> Option<Node<Self::State>>;
+    fn extend(&mut self, states: Vec<Node<Self::State>>);
 }
 
 // ================================================================================
@@ -39,6 +40,10 @@ impl<S: State> Frontier for QueueFrontier<S> {
     fn pop(&mut self) -> Option<Node<Self::State>> {
         self.queue.pop_front()
     }
+    
+    fn extend(&mut self, states: Vec<Node<Self::State>>) {
+        self.queue.extend(states);
+    }
 }
 
 pub struct StackFrontier<S: State> {
@@ -68,6 +73,10 @@ impl<S: State> Frontier for StackFrontier<S> {
 
     fn pop(&mut self) -> Option<Node<Self::State>> {
         self.stack.pop()
+    }
+
+    fn extend(&mut self, states: Vec<Node<Self::State>>) {
+        self.stack.extend(states);
     }
 }
 
