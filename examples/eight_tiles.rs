@@ -1,4 +1,4 @@
-use search::{self, State, Space, Action};
+use search::{self, State, Action};
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub enum EightTilesAction {

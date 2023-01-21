@@ -6,7 +6,7 @@ use crate::{
     dup_protection::StateCacheSet,
     frontiers::{Frontier, QueueFrontier, StackFrontier},
     output::SearchResult,
-    Action, Space, State,
+    Action, Space, State
 };
 use std::collections::HashSet;
 

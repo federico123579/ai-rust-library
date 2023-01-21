@@ -76,10 +76,10 @@ impl<S: State> Frontier for StackFrontier<S> {
 // {
 //     heap: BinaryHeap<S>,
 // }
-
+//
 // impl<S: State + PartialEq + Eq + PartialOrd + Ord> Iterator for PriorityFrontier<S> {
 //     type Item = S;
-
+//
 //     fn next(&mut self) -> Option<Self::Item> {
 //         self.heap.pop()
 //     }
